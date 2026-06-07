@@ -222,21 +222,25 @@ function Invoke-PythonScript {
         $fullArgs = @($scriptPath) + $Arguments
 
         # Ejecutar Python directamente (permite ventanas OpenCV)
-        # 2>$null descarta stderr para que no contamine el JSON de stdout
         $prevEAP = $ErrorActionPreference
         $ErrorActionPreference = "SilentlyContinue"
-        $output = & $script:VenvPython @fullArgs 2>$null
+        $rawOutput = & $script:VenvPython @fullArgs 2>&1
         $ErrorActionPreference = $prevEAP
 
-        # Convertir salida a string limpio
-        $stdout = ""
-        if ($output) {
-            if ($output -is [array]) {
-                $stdout = ($output -join "`n").Trim()
-            } else {
-                $stdout = "$output".Trim()
+        # Separar stdout (strings) de stderr (ErrorRecords)
+        $stdoutLines = @()
+        $stderrLines = @()
+        if ($rawOutput) {
+            foreach ($item in $rawOutput) {
+                if ($item -is [System.Management.Automation.ErrorRecord]) {
+                    $stderrLines += $item.ToString()
+                } else {
+                    $stdoutLines += "$item"
+                }
             }
         }
+        $stdout = ($stdoutLines -join "`n").Trim()
+        $stderr = ($stderrLines -join "`n").Trim()
 
         # Intentar parsear JSON del stdout
         if ($stdout.Length -gt 0) {
@@ -256,10 +260,13 @@ function Invoke-PythonScript {
             }
         }
 
-        # Si no se pudo parsear JSON
+        # Si no se pudo parsear JSON, mostrar toda la info disponible
+        $diagMsg = "No se recibio respuesta valida del script."
+        if ($stdout.Length -gt 0) { $diagMsg += " STDOUT: $stdout" }
+        if ($stderr.Length -gt 0) { $diagMsg += " STDERR: $stderr" }
         return @{
             status  = "error"
-            message = "No se recibio respuesta valida del script. Salida: $stdout"
+            message = $diagMsg
         }
     }
     catch {
