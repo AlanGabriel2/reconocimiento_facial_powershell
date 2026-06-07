@@ -219,22 +219,27 @@ function Invoke-PythonScript {
     }
 
     try {
-        # Usar archivo temporal para capturar stdout limpio (sin mezclar stderr)
-        $tempFile = [System.IO.Path]::GetTempFileName()
         $fullArgs = @($scriptPath) + $Arguments
 
-        $proc = Start-Process -FilePath $script:VenvPython `
-            -ArgumentList $fullArgs `
-            -NoNewWindow -Wait -PassThru `
-            -RedirectStandardOutput $tempFile `
-            -RedirectStandardError ([System.IO.Path]::GetTempFileName())
+        # Ejecutar Python directamente (permite ventanas OpenCV)
+        # 2>$null descarta stderr para que no contamine el JSON de stdout
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+        $output = & $script:VenvPython @fullArgs 2>$null
+        $ErrorActionPreference = $prevEAP
 
-        $stdout = Get-Content $tempFile -Raw -ErrorAction SilentlyContinue
-        Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
+        # Convertir salida a string limpio
+        $stdout = ""
+        if ($output) {
+            if ($output -is [array]) {
+                $stdout = ($output -join "`n").Trim()
+            } else {
+                $stdout = "$output".Trim()
+            }
+        }
 
         # Intentar parsear JSON del stdout
-        if ($stdout) {
-            $stdout = $stdout.Trim()
+        if ($stdout.Length -gt 0) {
             # Buscar la ultima linea que sea JSON valido
             $lines = $stdout -split "`n"
             for ($i = $lines.Count - 1; $i -ge 0; $i--) {
@@ -254,8 +259,7 @@ function Invoke-PythonScript {
         # Si no se pudo parsear JSON
         return @{
             status  = "error"
-            message = "No se recibio respuesta valida del script."
-            stdout  = $stdout
+            message = "No se recibio respuesta valida del script. Salida: $stdout"
         }
     }
     catch {
