@@ -219,15 +219,22 @@ function Invoke-PythonScript {
     }
 
     try {
+        # Usar archivo temporal para capturar stdout limpio (sin mezclar stderr)
+        $tempFile = [System.IO.Path]::GetTempFileName()
         $fullArgs = @($scriptPath) + $Arguments
-        $output = & $script:VenvPython @fullArgs 2>&1
 
-        # Separar stdout de stderr
-        $stdout = ($output | Where-Object { $_ -is [string] -or $_.GetType().Name -ne 'ErrorRecord' }) -join "`n"
-        $stderr = ($output | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] }) -join "`n"
+        $proc = Start-Process -FilePath $script:VenvPython `
+            -ArgumentList $fullArgs `
+            -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $tempFile `
+            -RedirectStandardError ([System.IO.Path]::GetTempFileName())
+
+        $stdout = Get-Content $tempFile -Raw -ErrorAction SilentlyContinue
+        Remove-Item $tempFile -Force -ErrorAction SilentlyContinue
 
         # Intentar parsear JSON del stdout
         if ($stdout) {
+            $stdout = $stdout.Trim()
             # Buscar la ultima linea que sea JSON valido
             $lines = $stdout -split "`n"
             for ($i = $lines.Count - 1; $i -ge 0; $i--) {
@@ -249,7 +256,6 @@ function Invoke-PythonScript {
             status  = "error"
             message = "No se recibio respuesta valida del script."
             stdout  = $stdout
-            stderr  = $stderr
         }
     }
     catch {
