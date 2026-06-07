@@ -440,7 +440,7 @@ function Invoke-FacialLogin {
 
     $result = Invoke-PythonScript -ScriptName "recognize_face.py" -Arguments @(
         "--db", $script:DatabasePath,
-        "--tolerance", $script:Tolerance.ToString()
+        "--tolerance", $script:Tolerance.ToString([System.Globalization.CultureInfo]::InvariantCulture)
     )
 
     Write-Host ""
