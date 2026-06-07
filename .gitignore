@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Entorno virtual
+venv/
+
+# Modelos de IA (se descargan con setup.ps1)
+models/*.onnx
+
+# Datos de usuarios (privacidad)
+faces/
+database/users.json
+
+# Temporales
+*.tmp
+_verify_test.py
+test_capture.jpg
+
+# IDE
+.vscode/
+.idea/
