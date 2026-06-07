@@ -222,10 +222,8 @@ function Invoke-PythonScript {
         $fullArgs = @($scriptPath) + $Arguments
 
         # Ejecutar Python directamente (permite ventanas OpenCV)
-        $prevEAP = $ErrorActionPreference
-        $ErrorActionPreference = "SilentlyContinue"
+        # No cambiar ErrorActionPreference: "Continue" permite capturar stderr sin perder stdout
         $rawOutput = & $script:VenvPython @fullArgs 2>&1
-        $ErrorActionPreference = $prevEAP
 
         # Separar stdout (strings) de stderr (ErrorRecords)
         $stdoutLines = @()
