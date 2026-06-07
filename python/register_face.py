@@ -87,7 +87,7 @@ def load_database(db_path):
     if not os.path.exists(db_path):
         return {"users": [], "metadata": {"version": "1.0.0"}}
 
-    with open(db_path, "r", encoding="utf-8") as f:
+    with open(db_path, "r", encoding="utf-8-sig") as f:
         return json.load(f)
 
 
