@@ -179,7 +179,14 @@ def main():
 
     args = parser.parse_args()
 
-    result = recognize_user(db_path=args.db, threshold=args.tolerance)
+    try:
+        result = recognize_user(db_path=args.db, threshold=args.tolerance)
+    except Exception as e:
+        result = {
+            "status": "error",
+            "message": f"Error inesperado: {str(e)}"
+        }
+        print(str(e), file=sys.stderr)
 
     print(json.dumps(result, ensure_ascii=False))
 

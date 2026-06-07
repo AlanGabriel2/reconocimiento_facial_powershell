@@ -210,12 +210,19 @@ def main():
 
     args = parser.parse_args()
 
-    result = register_user(
-        username=args.username,
-        full_name=args.fullname,
-        db_path=args.db,
-        faces_dir=args.faces_dir,
-    )
+    try:
+        result = register_user(
+            username=args.username,
+            full_name=args.fullname,
+            db_path=args.db,
+            faces_dir=args.faces_dir,
+        )
+    except Exception as e:
+        result = {
+            "status": "error",
+            "message": f"Error inesperado: {str(e)}"
+        }
+        print(str(e), file=sys.stderr)
 
     print(json.dumps(result, ensure_ascii=False))
     sys.exit(0 if result["status"] == "success" else 1)

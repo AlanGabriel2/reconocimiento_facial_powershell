@@ -145,7 +145,7 @@ def open_camera(camera_index=0):
                     # Verificar que realmente puede leer frames
                     ret, test = cap.read()
                     if ret and test is not None:
-                        print(f"Camara abierta: indice={idx}, backend={backend_name}", flush=True)
+                        print(f"Camara abierta: indice={idx}, backend={backend_name}", file=sys.stderr, flush=True)
                         return cap
                     else:
                         cap.release()
@@ -159,7 +159,7 @@ def open_camera(camera_index=0):
             if cap.isOpened():
                 ret, test = cap.read()
                 if ret and test is not None:
-                    print(f"Camara abierta: indice={idx}, backend=DEFAULT", flush=True)
+                    print(f"Camara abierta: indice={idx}, backend=DEFAULT", file=sys.stderr, flush=True)
                     return cap
                 else:
                     cap.release()
