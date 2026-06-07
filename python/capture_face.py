@@ -117,6 +117,58 @@ def draw_face_overlay(frame, faces, status_text="Buscando rostro..."):
     return display
 
 
+def open_camera(camera_index=0):
+    """
+    Intenta abrir la camara probando multiples backends e indices.
+    En laptops con camara integrada, MSMF suele funcionar mejor que DSHOW.
+
+    Returns:
+        cv2.VideoCapture or None
+    """
+    # Backends a probar en orden de prioridad para Windows
+    backends = [
+        ("MSMF", cv2.CAP_MSMF),       # Media Foundation - mejor para camaras integradas
+        ("DSHOW", cv2.CAP_DSHOW),      # DirectShow - mejor para camaras USB externas
+        ("AUTO", cv2.CAP_ANY),         # Automatico - OpenCV elige
+    ]
+
+    # Indices de camara a probar
+    indices = [camera_index]
+    if camera_index == 0:
+        indices.append(1)  # Probar tambien indice 1
+
+    for idx in indices:
+        for backend_name, backend in backends:
+            try:
+                cap = cv2.VideoCapture(idx, backend)
+                if cap.isOpened():
+                    # Verificar que realmente puede leer frames
+                    ret, test = cap.read()
+                    if ret and test is not None:
+                        print(f"Camara abierta: indice={idx}, backend={backend_name}", flush=True)
+                        return cap
+                    else:
+                        cap.release()
+            except Exception:
+                continue
+
+    # Ultimo intento: sin especificar backend
+    for idx in indices:
+        try:
+            cap = cv2.VideoCapture(idx)
+            if cap.isOpened():
+                ret, test = cap.read()
+                if ret and test is not None:
+                    print(f"Camara abierta: indice={idx}, backend=DEFAULT", flush=True)
+                    return cap
+                else:
+                    cap.release()
+        except Exception:
+            continue
+
+    return None
+
+
 def capture_face_from_webcam(window_title="Captura Facial", camera_index=0):
     """
     Abre la webcam, muestra vista previa con deteccion facial en vivo,
@@ -125,12 +177,12 @@ def capture_face_from_webcam(window_title="Captura Facial", camera_index=0):
     Returns:
         tuple: (success: bool, frame: np.ndarray or None, faces: np.ndarray or None)
     """
-    cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+    cap = open_camera(camera_index)
 
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(camera_index)
-        if not cap.isOpened():
-            return False, None, None
+    if cap is None:
+        print("ERROR: No se pudo abrir ninguna camara.", file=sys.stderr)
+        print("Verifica que tu camara no este en uso por otra aplicacion.", file=sys.stderr)
+        return False, None, None
 
     # Configurar resolucion
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
